@@ -400,4 +400,95 @@ config ARCH_SA2150P
 	  If you do not wish to build a kernel that runs on this chipset,
 	  say 'N' here.
 
+menu "Xiaomi Family"
+config BOARD_XIAOMI
+	bool "Xiaomi Family"
+	help
+	  This enables support for Xiaomi Family devices
+	  
+if BOARD_XIAOMI
+config BOARD_XIAOMI_LAHAINA
+	bool "Xiaomi Lahaina/SM8350 Board"
+	select ARCH_QCOM
+	select ARCH_LAHAINA
+	
+config BOARD_CETUS
+	bool "Cetus platform"
+	select BOARD_XIAOMI_LAHAINA
+	help
+	  This enables support for Xiaomi MIX Fold.
+	  
+config BOARD_HAYDN
+	bool "Haydn and HaydnIN platform"
+	select BOARD_XIAOMI_LAHAINA
+	help
+	  This enables support for Xiaomi Mi 11i / Mi 11x Pro/ Redmi K40 Pro/Pro+.
+
+config BOARD_MARS
+	bool "Mars and Star platform"
+	select BOARD_XIAOMI_LAHAINA
+	help
+	  This enables support for Xiaomi Mi 11 Pro / Mi 11 Ultra.
+
+config BOARD_ODIN
+	bool "Odin platform"
+	select BOARD_XIAOMI_LAHAINA
+	help
+	  This enables support for Xiaomi MIX 4.
+
+config BOARD_VENUS
+	bool "Venus platform"
+	select BOARD_XIAOMI_LAHAINA
+	help
+	  This enables support for Xiaomi Mi 11.
+
+config BOARD_VILI
+	bool "Vili platform"
+	select BOARD_XIAOMI_LAHAINA
+	help
+	  This enables support for Xiaomi 11T Pro.
+
+config BOARD_XIAOMI_SHIMA
+	bool "Xiaomi Shima/SM7350 platform"
+	select ARCH_QCOM
+	select ARCH_SHIMA
+
+config BOARD_RENOIR
+	bool "Renoir platform"
+	select BOARD_XIAOMI_SHIMA
+	help
+	  This enables support for Xiaomi Mi 11 Lite 5G.
+
+config BOARD_XIAOMI_YUPIK
+	bool "Xiaomi Yupik/SM7325 platform"
+	select ARCH_QCOM
+	select ARCH_YUPIK
+
+config BOARD_MONA
+	bool "Mona platform"
+	select BOARD_XIAOMI_YUPIK
+	help
+	  This enables support for Xiaomi Civi.
+
+config BOARD_LISA
+	bool "Lisa platform"
+	select BOARD_XIAOMI_YUPIK
+	help
+	  This enables support for Xiaomi Mi 11 Lite 5G NE/LE.
+
+config BOARD_TAOYAO
+	bool "Taoyao platform"
+	select BOARD_XIAOMI_YUPIK
+	help
+	  This enables support for Xiaomi 12 Lite.
+
+config BOARD_ZIJIN
+	bool "Zijin platform"
+	select BOARD_XIAOMI_YUPIK
+	help
+	  This enables support for Xiaomi Civi 1S.
+
+endif
+endmenu
+
 endmenu
