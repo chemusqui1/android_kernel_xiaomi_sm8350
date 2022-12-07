@@ -112,6 +112,7 @@
 
 # required by sr100.ko
   spi_bus_type
+  
 # required by incrementalfs.ko
   revert_creds
 
