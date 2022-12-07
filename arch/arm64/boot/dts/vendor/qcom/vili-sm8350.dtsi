@@ -1,7 +1,4 @@
-/*
-this file is for attribution only of mars
-And public attribution of xiaomi platforms(like venus and so and)
-*/
+// This file is for attribution only on Xiaomi K3s aka vili platform (Xiaomi 11T Pro)
 
 #include "vili-pinctrl.dtsi"
 #include "xiaomi-sm8350-common.dtsi"
