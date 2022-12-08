@@ -22,6 +22,7 @@
 #define ELF_BDF_FILE_NAME_GF_PREFIX	"bdwlang.e"
 
 #define ELF_BDF_FILE_NAME_K3S             "bd_k3s.elf"
+#define ELF_BDF_FILE_NAME_K3S_IN             "bd_k3sin.elf"
 
 #define BIN_BDF_FILE_NAME		"bdwlan.bin"
 #define BIN_BDF_FILE_NAME_GF		"bdwlang.bin"
@@ -538,7 +539,11 @@ static int cnss_get_bdf_file_name(struct cnss_plat_data *plat_priv,
 		/* Board ID will be equal or less than 0xFF in GF mask case */
 		if (plat_priv->board_info.board_id == 0xFF) {
 			if (hw_platform_ver == HARDWARE_PROJECT_K3S) {
-				snprintf(filename_tmp, filename_len, ELF_BDF_FILE_NAME_K3S);
+				if((uint32_t)CountryIndia == hw_country_ver){
+					snprintf(filename_tmp, filename_len, ELF_BDF_FILE_NAME_K3S_IN);
+				}else{
+					snprintf(filename_tmp, filename_len, ELF_BDF_FILE_NAME_K3S);
+				}
 			} else {
 				snprintf(filename_tmp, filename_len,
 					 ELF_BDF_FILE_NAME);
