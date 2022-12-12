@@ -945,19 +945,6 @@ static int __cam_req_mgr_send_req(struct cam_req_mgr_core_link *link,
 			apply_req.report_if_bubble =
 				in_q->slot[idx].recover;
 
-			/*
-			 * If it is dual trigger usecase, need to tell
-			 * devices that the req is re-applied, then the
-			 * devices need to skip applying if the req has
-			 * been handled.
-			 * e.x. ISP device
-			 */
-			if (link->retry_cnt > 0) {
-				if (!apply_req.report_if_bubble &&
-					link->dual_trigger)
-					apply_req.re_apply = true;
-			}
-
 			if ((slot->ops.dev_hdl == dev->dev_hdl) &&
 				(slot->ops.is_applied)) {
 				slot->ops.is_applied = false;
@@ -1499,7 +1486,7 @@ static int __cam_req_mgr_check_sync_req_is_ready(
 			sync_frame_duration / 2)
 			link->sync_link_sof_skip = true;
 		return -EINVAL;
-	} else if (!ready) {
+	} else if (ready == false) {
 		CAM_DBG(CAM_CRM,
 			"Req: %lld not ready on link: %x",
 			req_id, link->link_hdl);
@@ -1552,6 +1539,94 @@ static int __cam_req_mgr_check_sync_req_is_ready(
 
 	return 0;
 }
+
+/**
+* __cam_req_mgr_check_peer_req_is_applied()
+*
+* @brief	 : Check whether peer req is applied
+* @link	 : pointer to link whose input queue and req tbl are
+*			   traversed through
+* @idx 	 : slot idx
+* @return	 : true means the req is applied, others not applied
+*
+*/
+/*
+static bool __cam_req_mgr_check_peer_req_is_applied(
+	struct cam_req_mgr_core_link *link,
+	int32_t idx)
+{
+	bool applied = true;
+	int64_t req_id;
+	int i, sync_slot_idx = 0;
+	struct cam_req_mgr_core_link *sync_link;
+	struct cam_req_mgr_slot *slot, *sync_slot;
+	struct cam_req_mgr_req_queue *in_q;
+
+	if (idx < 0)
+		return true;
+
+	slot = &link->req.in_q->slot[idx];
+	req_id = slot->req_id;
+	in_q = link->req.in_q;
+
+	CAM_DBG(CAM_REQ,
+		"Check Req[%lld] idx %d req_status %d link_hdl %x is applied in peer link",
+		req_id, idx, slot->status, link->link_hdl);
+
+	if (slot->sync_mode == CAM_REQ_MGR_SYNC_MODE_NO_SYNC) {
+		applied = true;
+		goto end;
+	}
+
+	for (i = 0; i < link->num_sync_links; i++) {
+		sync_link = link->sync_link[i];
+
+		if (!sync_link) {
+			applied &= true;
+			continue;
+		}
+
+		sync_slot_idx = __cam_req_mgr_find_slot_for_req(
+			sync_link->req.in_q, req_id);
+
+		in_q = sync_link->req.in_q;
+
+		if (!in_q) {
+			CAM_DBG(CAM_CRM, "Link hdl %x in_q is NULL",
+				sync_link->link_hdl);
+			applied &= true;
+			continue;
+		}
+
+		if ((sync_slot_idx < 0) ||
+			(sync_slot_idx >= MAX_REQ_SLOTS)) {
+			CAM_DBG(CAM_CRM,
+				"Can't find req:%lld from peer link, idx:%d",
+				req_id, sync_slot_idx);
+			applied &= true;
+			continue;
+		}
+
+		sync_slot = &in_q->slot[sync_slot_idx];
+
+		if (sync_slot->status == CRM_SLOT_STATUS_REQ_APPLIED)
+			applied &= true;
+		else
+			applied &= false;
+
+		CAM_DBG(CAM_CRM,
+			"link:%x idx:%d status:%d applied:%d",
+			sync_link->link_hdl, sync_slot_idx, sync_slot->status, applied);
+	}
+
+end:
+	CAM_DBG(CAM_REQ,
+		"Check Req[%lld] idx %d applied:%d",
+		req_id, idx, link->link_hdl, applied);
+
+	return applied;
+}
+*/
 
 static int __cam_req_mgr_check_multi_sync_link_ready(
 	struct cam_req_mgr_core_link *link,
@@ -1714,6 +1789,19 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
 		return -EINVAL;
 	}
 
+	/*
+	 * In case if the wq is scheduled while destroying session
+	 * the session mutex is already taken and will cause a
+	 * dead lock. To avoid further processing check link state
+	 * and exit.
+	 */
+	spin_lock_bh(&link->link_state_spin_lock);
+	if (link->state == CAM_CRM_LINK_STATE_IDLE) {
+		spin_unlock_bh(&link->link_state_spin_lock);
+		return -EPERM;
+	}
+	spin_unlock_bh(&link->link_state_spin_lock);
+
 	mutex_lock(&session->lock);
 	in_q = link->req.in_q;
 	/*
@@ -1814,6 +1902,7 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
 				CAM_DBG(CAM_CRM, "EOF apply first");
 				rc = -EAGAIN;
 			}
+
 		}
 
 		if (rc < 0) {
@@ -1912,8 +2001,9 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
 			(trigger == CAM_TRIGGER_POINT_SOF)) {
 			slot->status = CRM_SLOT_STATUS_REQ_APPLIED;
 
-			CAM_DBG(CAM_CRM, "req %d is applied on link %x",
+			CAM_DBG(CAM_CRM, "req %d idx %d is applied on link %x",
 				slot->req_id,
+				in_q->rd_idx,
 				link->link_hdl);
 			idx = in_q->rd_idx;
 			reset_step = link->max_delay;
@@ -2144,7 +2234,7 @@ static void __cam_req_mgr_notify_sof_freeze(
 static int __cam_req_mgr_process_sof_freeze(void *priv, void *data)
 {
 	struct cam_req_mgr_core_link    *link = NULL;
-	struct cam_req_mgr_req_queue    *in_q = NULL;
+	struct cam_req_mgr_req_queue	*in_q = NULL;
 	struct cam_req_mgr_core_session *session = NULL;
 	struct cam_req_mgr_message       msg;
 	int rc = 0;
@@ -2899,6 +2989,12 @@ int cam_req_mgr_process_error(void *priv, void *data)
 			__cam_req_mgr_tbl_set_all_skip_cnt(&link->req.l_tbl);
 			in_q->rd_idx = idx;
 			in_q->slot[idx].status = CRM_SLOT_STATUS_REQ_ADDED;
+			if (link->sync_link[0]) {
+				in_q->slot[idx].sync_mode = 0;
+				__cam_req_mgr_inc_idx(&idx, 1,
+					link->req.l_tbl->num_slots);
+				in_q->slot[idx].sync_mode = 0;
+			}
 
 			/* The next req may also be applied */
 			idx = in_q->rd_idx;
@@ -3257,10 +3353,9 @@ static int __cam_req_mgr_check_for_dual_trigger(
 
 		CAM_WARN(CAM_CRM,
 			"One of the devices could not generate trigger");
-
 		link->trigger_cnt[0][trigger] = 0;
 		link->trigger_cnt[1][trigger] = 0;
-		CAM_DBG(CAM_CRM, "Reset the trigger cnt");
+ 		CAM_DBG(CAM_CRM, "Reset the trigger cnt");
 		return rc;
 	}
 
