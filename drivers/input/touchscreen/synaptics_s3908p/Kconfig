@@ -12,18 +12,6 @@ config TOUCHSCREEN_SYNAPTICS_TCM_S3908P
 
 	  To compile this driver as a module, choose M here.
 
-
-config TOUCHSCREEN_SYNAPTICS_TCM_SPI
-	tristate "synaptics spi support"
-	default n
-	depends on TOUCHSCREEN_SYNAPTICS_TCM_S3908P
-	help
-	  Say Y here to enable debug tools
-
-	  If unsure, say N.
-
-	  To compile this driver as a module, choose M here.
-
 config TOUCHSCREEN_SYNAPTICS_TCM_CORE
 	tristate "Synaptics TCM core module"
 	depends on TOUCHSCREEN_SYNAPTICS_TCM_S3908P

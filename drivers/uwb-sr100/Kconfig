@@ -1,8 +1,9 @@
 #
-# Nxp SPI SR100  devices
+# Nxp SPI SR100 devices
 #
 
 config NXP_SR100
 	tristate "Nxp SPI driver for SR100 devices"
-
-
+	help
+	  Say y here to enable support for NXP SR100 series devices.
+	  If you are unsure of enabling that, say n here.
