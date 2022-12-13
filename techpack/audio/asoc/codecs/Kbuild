@@ -263,22 +263,7 @@ ifeq ($(KERNEL_BUILD), 1)
 	obj-y	+= bolero/
 	obj-y	+= wsa883x/
 	obj-y	+= rouleur/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), venus star haydn odin vili))
 	obj-y	+= cs35l41/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), cetus))
-	obj-y	+= cs35l45/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), renoir))
-	obj-y	+= tfa98xx/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), mona))
-	obj-y	+= aw88263s/
 endif
 
 # Module information used by KBuild framework
